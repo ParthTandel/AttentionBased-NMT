@@ -1,11 +1,8 @@
-from __future__ import print_function
-
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
-from tensorflow.keras.preprocessing.text import Tokenizer
 import numpy as np
-import random
-
+import json
+from pprint import pprint
 class Utils:
 
     def tokenize(self, x):
@@ -22,7 +19,7 @@ class Utils:
         sequences = []
         for text in x:
             seq = []
-            for word in text.lower().split():
+            for word in text.lower():
                 if word not in vocab:
                     vocab[word] = index
                     reverse_vocab[index] = word
@@ -57,7 +54,7 @@ class Utils:
 
         encoder_data = []    
         decoder_data = []
-        for line in lines:
+        for line in lines[0:min(10000, len(lines))]:
             try:
                 line = line.split("\t")
                 encoder,decoder = line[0], line[1]
@@ -72,7 +69,6 @@ class Utils:
         decoder_sequence_target = [ x[1:] for x in decoder_sequence]
 
         num_decoder_data_token = max([max(x) for x in decoder_sequence]) + 1
-        num_encoder_data_token = max([max(x) for x in encoder_sequence]) + 1
 
         len_decoder_data_sen = max([len(x) for x in decoder_sequence]) + 2
         len_encoder_data_sen = max([len(x) for x in encoder_sequence]) + 2
@@ -82,5 +78,45 @@ class Utils:
         decoder_sequence_target = self.padSequence(decoder_sequence_target, len_decoder_data_sen)
         decoder_sequence_target = self.oneHotEncoder(decoder_sequence_target, num_decoder_data_token)
 
-        return encoder_sequence, decoder_sequence, decoder_sequence_target, encoder_vocab, encoder_reverse_vocab, decoder_vocab, decoder_reverse_vocab
+
+        train_ids = list(np.random.choice(len(encoder_sequence), int(len(encoder_sequence) * 0.8)))
+        val_test_ids = list(set(range(len(encoder_sequence))) - set(train_ids))
+        validation_ids = val_test_ids[0:int(len(val_test_ids)/2)]
+        test_ids = val_test_ids[int(len(val_test_ids)/2):]
+
+        meta_json = {
+            "train_ids"         : [int(x) for x in train_ids],
+            "validation_ids"    : [int(x) for x in validation_ids],
+            "test_ids"          : [int(x) for x in test_ids],
+            "len"               : len(encoder_sequence),
+            "encoder_len"       : len_encoder_data_sen,
+            "decoder_len"       : len_decoder_data_sen,
+            "max_encoder_vocab" : len(encoder_vocab.keys()),
+            "max_decoder_vocab" : len(decoder_vocab.keys()),
+        }
+
+        np.save('modelData/encoder_input', encoder_sequence)
+        np.save('modelData/decoder_input', decoder_sequence)
+        np.save('modelData/decoder_target', decoder_sequence_target)
+
+        with open("modelData/encoder_vocab.json", "w") as fl:
+            json.dump(encoder_vocab, fl)
+
+        with open("modelData/decoder_vocab.json", "w") as fl:
+            json.dump(decoder_vocab, fl)
+
+        with open("modelData/encoder_reverse_vocab.json", "w") as fl:
+            json.dump(encoder_reverse_vocab, fl)
+
+        with open("modelData/decoder_reverse_vocab.json", "w") as fl:
+            json.dump(decoder_reverse_vocab, fl)
+
+        with open("modelData/meta_data.json", "w") as fl:
+            json.dump(meta_json, fl)
+
+        data = (encoder_sequence, decoder_sequence, decoder_sequence_target)
+        vocabs = (encoder_vocab, encoder_reverse_vocab, decoder_vocab, decoder_reverse_vocab)
+
+        return data, vocabs
+
 
