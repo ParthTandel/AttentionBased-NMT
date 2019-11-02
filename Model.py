@@ -84,15 +84,16 @@ def predictSequence(input_seq, encoder_model, decoder_model, frn_vocab, frn_reve
 
 
 def main():
-    batch_size = 100               # Batch size for training.
+    batch_size = 100                # Batch size for training.
     epochs = 100                    # Number of epochs to train for.
-    hidden_state_dim = 200         # dimensionality of the hidden space.
-    data_path = 'data/fra.txt'     # data Path "question'\t'answer" format
-    util = Utils()               # class for data processing
-    data, vocab = util.loadData(data_path)
-    del data
-    del vocab
+    hidden_state_dim = 200          # dimensionality of the hidden space.
+    data_path = 'data/fra.txt'      # data Path "question'\t'answer" format
+    util = Utils()                  # class for data processing
+    status = util.loadData(data_path)
 
+    if not status:
+        return False
+        
     with open("modelData/meta_data.json", "r") as fl:
         js = json.load(fl)
 

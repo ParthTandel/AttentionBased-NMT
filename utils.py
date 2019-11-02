@@ -47,14 +47,14 @@ class Utils:
             k = k + 1
         return np.array(returnSeq)
 
-    def loadData(self, data_path = "data/fra.txt"):
+    def loadData(self, data_path = "data/conv.txt"):
 
         with open(data_path, 'r', encoding='utf-8') as f:
             lines = f.read().split('\n')
 
         encoder_data = []    
         decoder_data = []
-        for line in lines[0:min(10000, len(lines))]:
+        for line in lines[0:min(20000, len(lines))]:
             try:
                 line = line.split("\t")
                 encoder,decoder = line[0], line[1]
@@ -64,23 +64,62 @@ class Utils:
                 pass
 
         encoder_sequence, encoder_vocab, encoder_reverse_vocab = self.tokenize(encoder_data)
+        len_encoder_data_sen = max([len(x) for x in encoder_sequence]) + 2
+        encoder_sequence = self.padSequence(encoder_sequence, len_encoder_data_sen)
+        encoder_sequence_len = len(encoder_sequence)
+        encoder_vocab_len = len(encoder_vocab.keys())
+
+        index = 0
+        for val in encoder_sequence:
+            np.save('modelData/encoder_npz/encoder_input_' +str(index) , val)
+            index = index + 1
+        del encoder_sequence
+
+        with open("modelData/encoder_vocab.json", "w") as fl:
+            json.dump(encoder_vocab, fl)
+        del encoder_vocab
+
+        with open("modelData/encoder_reverse_vocab.json", "w") as fl:
+            json.dump(encoder_reverse_vocab, fl)
+        del encoder_reverse_vocab
+
         decoder_sequence, decoder_vocab, decoder_reverse_vocab = self.tokenize(decoder_data)
         decoder_sequence = [[2] + x + [3] for x in decoder_sequence]
         decoder_sequence_target = [ x[1:] for x in decoder_sequence]
 
         num_decoder_data_token = max([max(x) for x in decoder_sequence]) + 1
-
         len_decoder_data_sen = max([len(x) for x in decoder_sequence]) + 2
-        len_encoder_data_sen = max([len(x) for x in encoder_sequence]) + 2
+        decoder_vocab_len = len(decoder_vocab.keys())
 
-        encoder_sequence = self.padSequence(encoder_sequence, len_encoder_data_sen)
         decoder_sequence = self.padSequence(decoder_sequence, len_decoder_data_sen)
+
+        index = 0
+        for val in decoder_sequence:
+            np.save('modelData/decoder_npz/decoder_input_' +str(index) , val)
+            index = index + 1
+        del decoder_sequence
+
         decoder_sequence_target = self.padSequence(decoder_sequence_target, len_decoder_data_sen)
         decoder_sequence_target = self.oneHotEncoder(decoder_sequence_target, num_decoder_data_token)
 
+        index = 0
+        for val in decoder_sequence_target:
+            np.save('modelData/decoder_target_npz/decoder_target_' +str(index) , val)
+            index = index + 1
 
-        train_ids = list(np.random.choice(len(encoder_sequence), int(len(encoder_sequence) * 0.8)))
-        val_test_ids = list(set(range(len(encoder_sequence))) - set(train_ids))
+        del decoder_sequence_target
+
+        with open("modelData/decoder_vocab.json", "w") as fl:
+            json.dump(decoder_vocab, fl)
+        del decoder_vocab
+
+        with open("modelData/decoder_reverse_vocab.json", "w") as fl:
+            json.dump(decoder_reverse_vocab, fl)
+        del decoder_reverse_vocab
+
+
+        train_ids = list(np.random.choice(encoder_sequence_len, int(encoder_sequence_len * 0.8)))
+        val_test_ids = list(set(range(encoder_sequence_len)) - set(train_ids))
         validation_ids = val_test_ids[0:int(len(val_test_ids)/2)]
         test_ids = val_test_ids[int(len(val_test_ids)/2):]
 
@@ -88,35 +127,17 @@ class Utils:
             "train_ids"         : [int(x) for x in train_ids],
             "validation_ids"    : [int(x) for x in validation_ids],
             "test_ids"          : [int(x) for x in test_ids],
-            "len"               : len(encoder_sequence),
+            "len"               : encoder_sequence_len,
             "encoder_len"       : len_encoder_data_sen,
             "decoder_len"       : len_decoder_data_sen,
-            "max_encoder_vocab" : len(encoder_vocab.keys()),
-            "max_decoder_vocab" : len(decoder_vocab.keys()),
+            "max_encoder_vocab" : encoder_vocab_len,
+            "max_decoder_vocab" : decoder_vocab_len,
         }
-
-        np.save('modelData/encoder_input', encoder_sequence)
-        np.save('modelData/decoder_input', decoder_sequence)
-        np.save('modelData/decoder_target', decoder_sequence_target)
-
-        with open("modelData/encoder_vocab.json", "w") as fl:
-            json.dump(encoder_vocab, fl)
-
-        with open("modelData/decoder_vocab.json", "w") as fl:
-            json.dump(decoder_vocab, fl)
-
-        with open("modelData/encoder_reverse_vocab.json", "w") as fl:
-            json.dump(encoder_reverse_vocab, fl)
-
-        with open("modelData/decoder_reverse_vocab.json", "w") as fl:
-            json.dump(decoder_reverse_vocab, fl)
 
         with open("modelData/meta_data.json", "w") as fl:
             json.dump(meta_json, fl)
 
-        data = (encoder_sequence, decoder_sequence, decoder_sequence_target)
-        vocabs = (encoder_vocab, encoder_reverse_vocab, decoder_vocab, decoder_reverse_vocab)
 
-        return data, vocabs
+        return True
 
 

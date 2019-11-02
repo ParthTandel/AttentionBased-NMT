@@ -35,24 +35,22 @@ class DataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
 
-        encoder_data = np.load('modelData/encoder_input.npy')
-        decoder_data = np.load('modelData/decoder_input.npy')
-        decoder_target_data = np.load('modelData/decoder_target.npy')
+        encoder_data = []
+        for index in list_IDs_temp:
+            arr = np.load('modelData/encoder_npz/encoder_input_' + str(index) + '.npy')
+            encoder_data.append(arr)
+        encoder_data = np.array(encoder_data)
 
+        decoder_data = []
+        for index in list_IDs_temp:
+            arr = np.load('modelData/decoder_npz/decoder_input_' + str(index) + '.npy')
+            decoder_data.append(arr)
+        decoder_data = np.array(decoder_data)
 
+        decoder_target_data = []
+        for index in list_IDs_temp:
+            arr = np.load('modelData/decoder_target_npz/decoder_target_' + str(index) + '.npy')
+            decoder_target_data.append(arr)
+        decoder_target_data = np.array(decoder_target_data)
 
-        return [encoder_data[list_IDs_temp], decoder_data[list_IDs_temp]], decoder_target_data[list_IDs_temp]
-
-        # Initialization
-        # X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        # y = np.empty((self.batch_size), dtype=int)
-        #
-        # # Generate data
-        # for i, ID in enumerate(list_IDs_temp):
-        #     # Store sample
-        #     X[i,] = np.load('data/' + ID + '.npy')
-        #
-        #     # Store class
-        #     y[i] = self.labels[ID]
-        #
-        # return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return [encoder_data, decoder_data], decoder_target_data
