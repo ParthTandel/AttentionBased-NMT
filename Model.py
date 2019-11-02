@@ -89,10 +89,9 @@ def main():
     hidden_state_dim = 200          # dimensionality of the hidden space.
     data_path = 'data/fra.txt'      # data Path "question'\t'answer" format
     util = Utils()                  # class for data processing
-    status = util.loadData(data_path)
-
-    if not status:
-        return False
+    # status = util.loadData(data_path)
+    # if not status:
+    #     return False
         
     with open("modelData/meta_data.json", "r") as fl:
         js = json.load(fl)
@@ -115,8 +114,17 @@ def main():
 
     training_generator = DataGenerator(js["train_ids"], batch_size=batch_size)
     validation_generator = DataGenerator(js["validation_ids"], batch_size=batch_size)
-    model.fit_generator(generator=training_generator, validation_data=validation_generator, epochs=epochs)
-    model.save("chat.h5")
+
+    for i in range(0,10):
+        print(i)
+        if os.path.exists("modelData/model.h5"):
+            model.load_weights("modelData/model.h5")
+            encoder_model.load_weights("modelData/encoder_model.h5")
+            decoder_model.load_weights("modelData/decoder_model.h5")
+        model.fit_generator(generator=training_generator, validation_data=validation_generator, epochs=5)
+        model.save_weights("modelData/model.h5")
+        encoder_model.save_weights("modelData/encoder_model.h5")
+        decoder_model.save_weights("modelData/decoder_model.h5")
 
 if __name__ == "__main__":
     main()
