@@ -26,21 +26,13 @@ def EncodeDecoderModel(num_english_token, num_french_token, num_hidden_state, ma
     decoder_dense = Dense(num_french_token, activation='softmax')
     decoder_outputs = decoder_dense(decoder_outputs)
 
-    print("decoder shape")
-    print(decoder_outputs.shape)
-    print("decoder shape")
-
     model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
-
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['acc'])
-    model.summary()
+    # model.summary()
 
     # inference model
     encoder_model = Model(encoder_inputs, encoder_states)
-    encoder_model.summary()
-
-    # # enc_model = Model(encoder_inputs, enc_state)
-    # # enc_model.summary()
+    # encoder_model.summary()
 
     decoder_inputs_state_h = Input(shape=(num_hidden_state,))
     decoder_inputs_state_c = Input(shape=(num_hidden_state,))
@@ -51,9 +43,8 @@ def EncodeDecoderModel(num_english_token, num_french_token, num_hidden_state, ma
     decoder_outputs = decoder_dense(decoder_outputs)
     decoder_model = Model([decoder_inputs, decoder_state_input],
                           [decoder_outputs, decoder_states])
-    decoder_model.summary()
+    # decoder_model.summary()
     return model, encoder_model, decoder_model
-    # return model
 
 
 def predictSequence(input_seq, encoder_model, decoder_model, frn_vocab, frn_reverse_vocab):
@@ -87,11 +78,11 @@ def main():
     batch_size = 100                # Batch size for training.
     epochs = 100                    # Number of epochs to train for.
     hidden_state_dim = 200          # dimensionality of the hidden space.
-    data_path = 'data/fra.txt'      # data Path "question'\t'answer" format
+    data_path = 'data/text.txt'      # data Path "question'\t'answer" format
     util = Utils()                  # class for data processing
-    # status = util.loadData(data_path)
-    # if not status:
-    #     return False
+    status = util.loadData(data_path)
+    if not status:
+        return False
         
     with open("modelData/meta_data.json", "r") as fl:
         js = json.load(fl)
@@ -117,14 +108,14 @@ def main():
 
     for i in range(0,10):
         print(i)
-        if os.path.exists("modelData/model.h5"):
-            model.load_weights("modelData/model.h5")
-            encoder_model.load_weights("modelData/encoder_model.h5")
-            decoder_model.load_weights("modelData/decoder_model.h5")
+        if os.path.exists("savedModel/model.h5"):
+            model.load_weights("savedModel/model.h5")
+            encoder_model.load_weights("savedModel/encoder_model.h5")
+            decoder_model.load_weights("savedModel/decoder_model.h5")
         model.fit_generator(generator=training_generator, validation_data=validation_generator, epochs=5)
-        model.save_weights("modelData/model.h5")
-        encoder_model.save_weights("modelData/encoder_model.h5")
-        decoder_model.save_weights("modelData/decoder_model.h5")
+        model.save_weights("savedModel/model.h5")
+        encoder_model.save_weights("savedModel/encoder_model.h5")
+        decoder_model.save_weights("savedModel/decoder_model.h5")
 
 if __name__ == "__main__":
     main()
